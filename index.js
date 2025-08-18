@@ -20,7 +20,7 @@ const STREAMS = {
 };
 
 // 🎵 Proxy de audio (ej: /radio1 o /radio2)
-app.get("/:radio", (req, res) => {
+app.get("/:radiohot","/:radioestacionmix",(req, res) => {
   const radio = STREAMS[req.params.radio];
   if (!radio) return res.status(404).send("Stream no encontrado");
 
@@ -29,7 +29,7 @@ app.get("/:radio", (req, res) => {
 });
 
 // 📡 Metadatos desde status-json.xsl
-app.get("/:radio/meta", async (req, res) => {
+app.get("/:radiohot/meta", "/:radioestacionmix/meta", async (req, res) => {
   const radio = STREAMS[req.params.radio];
   if (!radio) return res.status(404).json({ error: "Stream no encontrado" });
 
