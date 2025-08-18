@@ -8,14 +8,14 @@ const PORT = process.env.PORT || 3000;
 // Configuración de radios
 const STREAMS = {
   radiohot: {
-    url: "https://streamlive2.hearthis.at:8000/10856355.ogg",
+    url: "http://streamlive2.hearthis.at:8000/10856355.ogg",
     mount: "10856355.ogg",
-    statusUrl: "https://streamlive2.hearthis.at:8000/status-json.xsl"
+    statusUrl: "http://streamlive2.hearthis.at:8000/status-json.xsl"
   },
   radioestacionmix: {
-    url: "https://streamlive2.hearthis.at:8000/10778826.ogg",
+    url: "http://streamlive2.hearthis.at:8000/10778826.ogg",
     mount: "10778826.ogg",
-    statusUrl: "https://streamlive2.hearthis.at:8000/status-json.xsl"
+    statusUrl: "http://streamlive2.hearthis.at:8000/status-json.xsl"
   }
 };
 
