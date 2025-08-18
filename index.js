@@ -19,31 +19,29 @@ const STREAMS = {
   }
 };
 
-// 🎵 Proxy de audio (ej: /radio1 o /radio2)
-app.get("/:radiohot","/:radioestacionmix",(req, res) => {
-  const radio = STREAMS[req.params.radio];
-  if (!radio) return res.status(404).send("Stream no encontrado");
-
-  res.setHeader("Content-Type", "audio/mpeg");
+// 🎵 Proxy de audio - rutas fijas
+app.get("/radiohot", (req, res) => {
+  const radio = STREAMS.radiohot;
+  res.setHeader("Content-Type", "audio/ogg");
   request(radio.url).pipe(res);
 });
 
-// 📡 Metadatos desde status-json.xsl
-app.get("/:radiohot/meta", "/:radioestacionmix/meta", async (req, res) => {
-  const radio = STREAMS[req.params.radio];
-  if (!radio) return res.status(404).json({ error: "Stream no encontrado" });
+app.get("/radioestacionmix", (req, res) => {
+  const radio = STREAMS.radioestacionmix;
+  res.setHeader("Content-Type", "audio/ogg");
+  request(radio.url).pipe(res);
+});
 
+// 📡 Metadatos - rutas fijas
+app.get("/radiohot/meta", async (req, res) => {
+  const radio = STREAMS.radiohot;
   try {
     const response = await fetch(radio.statusUrl);
     const data = await response.json();
 
-    // Buscar el mountPoint correcto
     let mount = null;
-
     if (Array.isArray(data.icestats.source)) {
-      mount = data.icestats.source.find(
-        (s) => s.listenurl && s.listenurl.includes(radio.mount)
-      );
+      mount = data.icestats.source.find(s => s.listenurl && s.listenurl.includes(radio.mount));
     } else if (data.icestats.source.listenurl.includes(radio.mount)) {
       mount = data.icestats.source;
     }
@@ -57,15 +55,43 @@ app.get("/:radiohot/meta", "/:radioestacionmix/meta", async (req, res) => {
       stream: mount.server_name || null
     });
   } catch (err) {
-    console.error("Error obteniendo metadata:", err);
+    console.error(err);
+    res.status(500).json({ error: "No se pudo obtener metadata" });
+  }
+});
+
+app.get("/radioestacionmix/meta", async (req, res) => {
+  const radio = STREAMS.radioestacionmix;
+  try {
+    const response = await fetch(radio.statusUrl);
+    const data = await response.json();
+
+    let mount = null;
+    if (Array.isArray(data.icestats.source)) {
+      mount = data.icestats.source.find(s => s.listenurl && s.listenurl.includes(radio.mount));
+    } else if (data.icestats.source.listenurl.includes(radio.mount)) {
+      mount = data.icestats.source;
+    }
+
+    if (!mount) return res.json({ metadata: null });
+
+    res.json({
+      listeners: mount.listeners,
+      title: mount.title || null,
+      artist: mount.artist || null,
+      stream: mount.server_name || null
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "No se pudo obtener metadata" });
   }
 });
 
 app.listen(PORT, () => {
-  console.log("✅ Radios disponibles:");
-  console.log(`http://localhost:${PORT}/radiohot (audio)`);
-  console.log(`http://localhost:${PORT}/radiohot/meta (metadata)`);
-  console.log(`http://localhost:${PORT}/radioestacionmix (audio)`);
-  console.log(`http://localhost:${PORT}/radioestacionmix/meta (metadata)`);
+  console.log(`✅ Servidor corriendo en puerto ${PORT}`);
+  console.log("✅ Rutas disponibles:");
+  console.log(`http://localhost:${PORT}/radiohot`);
+  console.log(`http://localhost:${PORT}/radiohot/meta`);
+  console.log(`http://localhost:${PORT}/radioestacionmix`);
+  console.log(`http://localhost:${PORT}/radioestacionmix/meta`);
 });
