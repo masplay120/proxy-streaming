@@ -6,12 +6,12 @@ const PORT = process.env.PORT || 3000;
 
 // 🎵 Lista de streams (puedes agregar los que quieras)
 const STREAMS = {
-  10856355: "http://streamlive2.hearthis.at:8000/10856355.ogg",
-  10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg",
+  radio/10856355: "http://streamlive2.hearthis.at:8000/10856355.ogg",
+  radio/10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg",
   radio3: "http://tu-servidor3:puerto/mountpoint3"
 };
 
-// Ruta dinámica: http://localhost:3000/radio1
+// Ruta dinámica: http://localhost:3000/radio
 app.get("/:radio", (req, res) => {
   const radio = req.params.radio;
   const url = STREAMS[radio];
@@ -28,5 +28,5 @@ app.get("/:radio", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy corriendo en http://localhost:${PORT}/10856355, /10778826, /radio3`);
+  console.log(`Proxy corriendo en http://localhost:${PORT}/radio/10856355, radio//10778826, /radio3`);
 });
