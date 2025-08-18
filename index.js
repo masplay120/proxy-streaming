@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 // 🎵 Lista de streams (puedes agregar los que quieras)
 const STREAMS = {
-  radiohot.mp3: "http://streamlive2.hearthis.at:8000/10856355.ogg",
+  radiohot: "http://streamlive2.hearthis.at:8000/10856355.ogg",
   radio2: "http://tu-servidor2:puerto/mountpoint2",
   radio3: "http://tu-servidor3:puerto/mountpoint3"
 };
@@ -28,5 +28,5 @@ app.get("/:radio", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy corriendo en http://localhost:${PORT}/radiohot.mp3, /radio2, /radio3`);
+  console.log(`Proxy corriendo en http://localhost:${PORT}/radiohot, /radio2, /radio3`);
 });
