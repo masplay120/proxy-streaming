@@ -24,7 +24,7 @@ app.get("/:radio", (req, res) => {
   const stream = request({
     url,
     headers: {
-      "Icy-MetaData": "1", // 👈 Importante
+      "Icy-MetaData": "0", // 👈 Importante
       "User-Agent": "Mozilla/5.0"
     }
   });
