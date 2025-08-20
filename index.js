@@ -4,113 +4,49 @@ const request = require("request");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🎵 Lista de streams configurados
+// 🎵 Lista de streams
 const STREAMS = {
   radio10856355: "http://streamlive2.hearthis.at:8000/10856355.ogg",
   radio10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg",
   radio3: "http://tu-servidor3:puerto/mountpoint3"
 };
 
-// 📌 Página principal que lista todas las radios disponibles
-app.get("/", (req, res) => {
-  let html = `
-    <html>
-      <head>
-        <title>Proxy Streaming</title>
-        <style>
-          body { font-family: Arial, sans-serif; background:#111; color:#eee; padding:20px; }
-          h1 { color:#4cafef; }
-          ul { list-style:none; padding:0; }
-          li { margin:10px 0; }
-          a { color:#ff9800; text-decoration:none; font-weight:bold; }
-          a:hover { text-decoration:underline; }
-        </style>
-      </head>
-      <body>
-        <h1>📻 Radios disponibles</h1>
-        <ul>
-  `;
-  Object.keys(STREAMS).forEach(radio => {
-    html += `
-      <li>
-        🎶 <strong>${radio}</strong><br>
-        ▶️ <a href="/${radio}" target="_blank">Stream</a> | 
-        ℹ️ <a href="/metadata/${radio}" target="_blank">Metadatos</a>
-      </li>
-    `;
-  });
-  html += `
-        </ul>
-      </body>
-    </html>
-  `;
-  res.send(html);
-});
-
-// 📌 Ruta dinámica para reproducir stream
+// Ruta dinámica
 app.get("/:radio", (req, res) => {
   const radio = req.params.radio;
   const url = STREAMS[radio];
-  if (!url) return res.status(404).send("Stream no encontrado");
 
-  res.setHeader("Content-Type", "audio/mpeg");
+  if (!url) {
+    return res.status(404).send("Stream no encontrado");
+  }
 
-  request({
-    url,
-    headers: { "Icy-MetaData": "1", "User-Agent": "Mozilla/5.0" }
-  }).on("error", (err) => {
-    console.error("Error con stream:", err.message);
-    res.status(500).send("Error al conectar con el stream");
-  }).pipe(res);
-});
-
-// 📌 Ruta para obtener metadatos JSON
-app.get("/metadata/:radio", (req, res) => {
-  const radio = req.params.radio;
-  const url = STREAMS[radio];
-  if (!url) return res.status(404).json({ error: "Stream no encontrado" });
-
+  // 🚨 Pedimos metadatos ICY
   const stream = request({
     url,
-    headers: { "Icy-MetaData": "1", "User-Agent": "Mozilla/5.0" }
+    headers: {
+      "Icy-MetaData": "1", // 👈 Importante
+      "User-Agent": "Mozilla/5.0"
+    }
   });
 
   stream.on("response", (response) => {
-    const metaInt = parseInt(response.headers["icy-metaint"]);
-    if (!metaInt) {
-      return res.json({ streamTitle: null });
+    // Algunos servidores responden con cabeceras ICY
+    if (response.headers["icy-metaint"]) {
+      console.log("MetaInt:", response.headers["icy-metaint"]);
     }
-
-    let audioBytes = 0;
-    let buffer = Buffer.alloc(0);
-
-    stream.on("data", (chunk) => {
-      audioBytes += chunk.length;
-      buffer = Buffer.concat([buffer, chunk]);
-
-      if (audioBytes >= metaInt) {
-        const metaLen = buffer[metaInt] * 16;
-        const meta = buffer.slice(metaInt + 1, metaInt + 1 + metaLen).toString();
-        const match = /StreamTitle='([^']*)'/.exec(meta);
-        const streamTitle = match ? match[1] : null;
-
-        res.json({ streamTitle });
-        stream.destroy();
-      }
-    });
+    if (response.headers["icy-name"]) {
+      console.log("Radio:", response.headers["icy-name"]);
+    }
+    if (response.headers["icy-genre"]) {
+      console.log("Género:", response.headers["icy-genre"]);
+    }
   });
 
-  stream.on("error", () => {
-    res.status(500).json({ error: "No se pudo leer metadata" });
-  });
+  // 🚀 Retransmitimos el stream con audio y metadatos
+  res.setHeader("Content-Type", "audio");
+  stream.pipe(res);
 });
 
-// 📌 Arrancar servidor
 app.listen(PORT, () => {
-  console.log(`✅ Proxy corriendo en http://localhost:${PORT}`);
-  console.log("📻 Radios disponibles:");
-  Object.keys(STREAMS).forEach(radio => {
-    console.log(`   • /${radio}  (stream)`);
-    console.log(`   • /metadata/${radio}  (metadatos)`);
-  });
+  console.log(`Proxy corriendo en http://localhost:${PORT}/radio10856355, /radio10778826, /radio3`);
 });
