@@ -1,32 +1,50 @@
-const express = require("express");
-const request = require("request");
+<?php
+// Radios configuradas
+$RADIOS = [
+    "radio10856355" => "http://streamlive2.hearthis.at:8000/10856355.ogg",
+    "radio10778826" => "http://streamlive2.hearthis.at:8000/10778826.ogg",
+    "radio3" => "http://127.0.0.1:8000/mount3"
+];
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Detectar la radio solicitada
+$path = basename($_SERVER['REQUEST_URI']);
+$radio = str_replace(".mp3","",$path); // si usas URLs tipo radio1.mp3
 
-// 🎵 Lista de streams (puedes agregar los que quieras)
-const STREAMS = {
-  radio10856355: "http://streamlive2.hearthis.at:8000/10856355.ogg",
-  radio10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg",
-  radio3: "http://tu-servidor3:puerto/mountpoint3"
-};
+if (!isset($RADIOS[$radio])) {
+    header("HTTP/1.0 404 Not Found");
+    echo "Radio no encontrada";
+    exit;
+}
 
-// Ruta dinámica: http://localhost:3000/radio1
-app.get("/:radio", (req, res) => {
-  const radio = req.params.radio;
-  const url = STREAMS[radio];
+$url = $RADIOS[$radio];
 
-  if (!url) {
-    return res.status(404).send("Stream no encontrado");
-  }
+// CORS
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+}
 
-  res.setHeader("Content-Type", "audio/mpeg");
-  request(url).on("error", (err) => {
-    console.error(`Error con stream ${radio}:`, err.message);
-    res.status(500).send("Error al conectar con el stream");
-  }).pipe(res);
-});
+// Tipo de contenido
+header("Content-Type: audio/mpeg");
 
-app.listen(PORT, () => {
-  console.log(`Proxy corriendo en http://localhost:${PORT}/radio10856355, /radio10778826, /radio3`);
-});
+// Abrir stream remoto
+$ctx = stream_context_create([
+    "http" => [
+        "header" => "Icy-MetaData:1\r\nUser-Agent: Mozilla/5.0\r\n"
+    ]
+]);
+
+$stream = fopen($url, 'r', false, $ctx);
+if (!$stream) {
+    header("HTTP/1.0 500 Internal Server Error");
+    echo "No se pudo conectar con la radio";
+    exit;
+}
+
+// Leer y enviar chunks más grandes para audio más fluido
+while (!feof($stream)) {
+    echo fread($stream, 8192);
+    flush();
+}
+
+fclose($stream);
+?>
