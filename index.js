@@ -4,13 +4,50 @@ const request = require("request");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🎵 Lista de streams
+// 🎵 Lista de streams configurados
 const STREAMS = {
   radio10856355: "http://streamlive2.hearthis.at:8000/10856355.ogg",
-  radio10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg"
+  radio10778826: "https://streamlive2.hearthis.at:8000/10778826.ogg",
+  radio3: "http://tu-servidor3:puerto/mountpoint3"
 };
 
-// Ruta de audio (proxy)
+// 📌 Página principal que lista todas las radios disponibles
+app.get("/", (req, res) => {
+  let html = `
+    <html>
+      <head>
+        <title>Proxy Streaming</title>
+        <style>
+          body { font-family: Arial, sans-serif; background:#111; color:#eee; padding:20px; }
+          h1 { color:#4cafef; }
+          ul { list-style:none; padding:0; }
+          li { margin:10px 0; }
+          a { color:#ff9800; text-decoration:none; font-weight:bold; }
+          a:hover { text-decoration:underline; }
+        </style>
+      </head>
+      <body>
+        <h1>📻 Radios disponibles</h1>
+        <ul>
+  `;
+  Object.keys(STREAMS).forEach(radio => {
+    html += `
+      <li>
+        🎶 <strong>${radio}</strong><br>
+        ▶️ <a href="/${radio}" target="_blank">Stream</a> | 
+        ℹ️ <a href="/metadata/${radio}" target="_blank">Metadatos</a>
+      </li>
+    `;
+  });
+  html += `
+        </ul>
+      </body>
+    </html>
+  `;
+  res.send(html);
+});
+
+// 📌 Ruta dinámica para reproducir stream
 app.get("/:radio", (req, res) => {
   const radio = req.params.radio;
   const url = STREAMS[radio];
@@ -27,7 +64,7 @@ app.get("/:radio", (req, res) => {
   }).pipe(res);
 });
 
-// Ruta de metadatos JSON
+// 📌 Ruta para obtener metadatos JSON
 app.get("/metadata/:radio", (req, res) => {
   const radio = req.params.radio;
   const url = STREAMS[radio];
@@ -68,6 +105,12 @@ app.get("/metadata/:radio", (req, res) => {
   });
 });
 
+// 📌 Arrancar servidor
 app.listen(PORT, () => {
-  console.log(`✅ Proxy en http://localhost:${PORT}`);
+  console.log(`✅ Proxy corriendo en http://localhost:${PORT}`);
+  console.log("📻 Radios disponibles:");
+  Object.keys(STREAMS).forEach(radio => {
+    console.log(`   • /${radio}  (stream)`);
+    console.log(`   • /metadata/${radio}  (metadatos)`);
+  });
 });
